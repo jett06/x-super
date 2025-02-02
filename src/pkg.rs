@@ -1,10 +1,7 @@
 use crate::Distro;
 use std::{
     io::Result as IOResult,
-    process::{
-        self,
-        Child,
-    },
+    process,
 };
 
 pub struct PackageManager {
