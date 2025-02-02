@@ -1,9 +1,6 @@
 use crate::Cli;
 use argh::FromArgs;
-use std::{
-    fs,
-    sync::LazyLock,
-};
+use std::sync::LazyLock;
 
 pub static HELP_TEXT: LazyLock<String> = LazyLock::new(|| {
     Cli::from_args(&["x-super"], &["--help"])
@@ -11,6 +8,5 @@ pub static HELP_TEXT: LazyLock<String> = LazyLock::new(|| {
         .output
 });
 pub const SKIM_PREVIEW_WINDOW: &str = "right:66%:wrap";
-pub static IS_TERMUX: LazyLock<bool> =
-    LazyLock::new(|| fs::exists("/data/data/com.termux/").unwrap_or(false));
+#[cfg(target_os = "linux")]
 pub const OS_RELEASE_PATH: &str = "/etc/os-release";

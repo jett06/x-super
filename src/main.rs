@@ -7,8 +7,9 @@ use crate::os::*;
 use crate::pkg::*;
 use argh::FromArgs;
 use skim::prelude::*;
+#[cfg(target_os = "android")]
+use std::env;
 use std::{
-    env,
     io::Cursor,
     process,
 };
@@ -26,12 +27,10 @@ struct Cli {
 }
 
 fn main() {
-    #[cfg(any(target_os = "linux", target_os = "android"))]
     // Fix an environmental variable for `skim`, otherwise the TUI is scrambled on Termux
     // platforms.
-    if *IS_TERMUX {
-        env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
-    }
+    #[cfg(target_os = "android")]
+    env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
 
     let cli: Cli = argh::from_env();
     let Some(manager) = new_package_manager() else {

@@ -55,6 +55,7 @@ impl LinuxDistro {
             _ => None,
         }
     }
+    #[cfg(not(target_os = "android"))]
     pub fn try_from_env() -> Option<Self> {
         if fs::exists(OS_RELEASE_PATH).unwrap_or(false) {
             let os_release = Ini::load_from_file(OS_RELEASE_PATH).ok()?;
@@ -63,6 +64,12 @@ impl LinuxDistro {
         } else {
             None
         }
+    }
+    // Termux doesn't have the `/etc/os-release` file, so we just create a stub function since its
+    // `apt` emulates Debian's.
+    #[cfg(target_os = "android")]
+    pub fn try_from_env() -> Option<Self> {
+        Some(Self::Debian)
     }
 }
 
