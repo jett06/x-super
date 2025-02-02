@@ -63,3 +63,18 @@ impl Display for ElevationHandler {
         )
     }
 }
+
+impl TryFrom<String> for ElevationHandler {
+    type Error = Error;
+
+    fn try_from(s: String) -> Result<Self> {
+        match s.to_lowercase().as_str() {
+            "doas" => Ok(Self::Doas),
+            "sudo" => Ok(Self::Sudo),
+            "gsudo" => Ok(Self::Gsudo),
+            "pkexec" => Ok(Self::Pkexec),
+            "please" => Ok(Self::Please),
+            _ => Err(Error::UnrecognizedElevationHandlerName(s)),
+        }
+    }
+}

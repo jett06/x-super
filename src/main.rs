@@ -28,6 +28,9 @@ struct Cli {
     /// select packages to remove
     #[argh(switch, short = 'r')]
     remove: bool,
+    /// override the default elevation handler for the given one
+    #[argh(option, short = 'e', hidden_help)]
+    elevation_handler: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -36,14 +39,16 @@ fn main() -> Result<()> {
     #[cfg(target_os = "android")]
     env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
 
+    let cli: Cli = argh::from_env();
+    let manager = new_package_manager()?;
     #[cfg(target_os = "linux")]
-    let maybe_elevation_handler = ElevationHandler::try_from_env().ok();
+    let maybe_elevation_handler = Some(
+        cli.elevation_handler
+            .map_or(ElevationHandler::try_from_env(), ElevationHandler::try_from)?,
+    );
 
     #[cfg(target_os = "android")]
     let maybe_elevation_handler = None;
-
-    let cli: Cli = argh::from_env();
-    let manager = new_package_manager()?;
 
     let maybe_package_list = if cli.install {
         Some(manager.available_package_list()?)
