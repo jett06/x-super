@@ -1,7 +1,6 @@
-use crate::{
-    PackageManagerImpl,
-    OS_RELEASE_PATH,
-};
+use crate::PackageManagerImpl;
+#[cfg(not(target_os = "android"))]
+use crate::OS_RELEASE_PATH;
 use ini::Ini;
 use std::{
     fs,
