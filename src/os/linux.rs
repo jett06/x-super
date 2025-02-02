@@ -100,7 +100,8 @@ impl PackageManagerImpl for LinuxDistro {
                 Ok(output_lines)
             }
         } else {
-            todo!("implement err handling when necessary pkg manager isn't found by `which::which`")
+            eprintln!("Failed to locate the package manager binary!");
+            process::exit(1);
         }
     }
     fn available_package_list(&self) -> IOResult<Vec<String>> {
@@ -115,7 +116,8 @@ impl PackageManagerImpl for LinuxDistro {
 
             Ok(output_lines)
         } else {
-            todo!()
+            eprintln!("Failed to locate the package manager binary!");
+            process::exit(1);
         }
     }
     fn interactive_install(&self, packages: &[String]) -> ! {
@@ -178,7 +180,8 @@ impl PackageManagerImpl for LinuxDistro {
         if let Ok(program_path) = which::which(program_name) {
             format!("{} {}", program_path.display(), args.join(" "))
         } else {
-            todo!()
+            eprintln!("Failed to locate the package manager binary!");
+            process::exit(1);
         }
     }
 }
