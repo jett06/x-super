@@ -9,6 +9,7 @@ use argh::FromArgs;
 use skim::prelude::*;
 use std::{
     env,
+    fs,
     io::Cursor,
     process,
 };
@@ -37,6 +38,10 @@ impl Cli {
 }
 
 fn main() {
+    // fix fucked ui on termux by patching TERMINFO var
+    if fs::exists("/data/data/com.termux/").unwrap_or(false) {
+        env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
+    }
     let cli: Cli = argh::from_env();
     let manager = PackageManager::init();
 
