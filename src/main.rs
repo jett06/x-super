@@ -26,7 +26,7 @@ struct Cli {
 }
 
 fn main() {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     // Fix an environmental variable for `skim`, otherwise the TUI is scrambled on Termux
     // platforms.
     if *IS_TERMUX {
