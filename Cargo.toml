@@ -8,5 +8,5 @@ argh = { version = "0.1.13" }
 two_percent = { version = "0.12.3", default-features = false }
 which = "7.0.1"
 
-[target.'cfg(not(target_os = "android"))'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 rust-ini = "0.21.1"
