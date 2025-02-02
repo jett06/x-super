@@ -75,7 +75,7 @@ impl PackageManagerImpl for LinuxDistro {
         let (program_name, args) = match self {
             Self::Arch => ("pacman", vec!["-Q", "-q"]),
             Self::Debian => ("dpkg", vec!["--get-selections"]),
-            _ => return Err(Error::UnsupportedOS),
+            Self::Void => ("xbps-query", vec!["--search="]),
         };
 
         let program_path = which::which(program_name)?;
@@ -83,12 +83,56 @@ impl PackageManagerImpl for LinuxDistro {
         cmd.args(args);
 
         let output_lines = Self::run_cmd_and_return_deduped_lines(cmd)?;
-        if let Self::Debian = self {
+
+        match self {
+            Self::Debian => {
+                let mut package_list = Vec::new();
+
+                for line in output_lines {
+                    if let Some(first_word) = line.split_whitespace().next() {
+                        package_list.push(first_word.to_string());
+                    }
+                }
+
+                Ok(package_list)
+            }
+            Self::Void => {
+                let mut package_list = Vec::new();
+
+                for line in output_lines {
+                    if let Some(second_word) = line.split_whitespace().nth(1) {
+                        if let Some(last_hyphen_index) = second_word.rfind("-") {
+                            package_list.push(second_word[..last_hyphen_index].to_string())
+                        }
+                    }
+                }
+
+                Ok(package_list)
+            }
+            _ => Ok(output_lines),
+        }
+    }
+    fn available_package_list(&self) -> Result<Vec<String>> {
+        let (program_name, args) = match self {
+            Self::Arch => ("pacman", vec!["-S", "-l", "-q"]),
+            Self::Debian => ("apt-cache", vec!["pkgnames", "--generate"]),
+            Self::Void => ("xbps-query", vec!["-R", "--search="]),
+        };
+
+        let program_path = which::which(program_name)?;
+        let mut cmd = Command::new(program_path);
+        cmd.args(args);
+
+        let output_lines = Self::run_cmd_and_return_deduped_lines(cmd)?;
+
+        if let Self::Void = self {
             let mut package_list = Vec::new();
 
             for line in output_lines {
-                if let Some(first_word) = line.split_whitespace().next() {
-                    package_list.push(first_word.to_string());
+                if let Some(second_word) = line.split_whitespace().nth(1) {
+                    if let Some(last_hyphen_index) = second_word.rfind("-") {
+                        package_list.push(second_word[..last_hyphen_index].to_string())
+                    }
                 }
             }
 
@@ -97,28 +141,13 @@ impl PackageManagerImpl for LinuxDistro {
             Ok(output_lines)
         }
     }
-    fn available_package_list(&self) -> Result<Vec<String>> {
-        let (program_name, args) = match self {
-            Self::Arch => ("pacman", vec!["-S", "-l", "-q"]),
-            Self::Debian => ("apt-cache", vec!["pkgnames", "--generate"]),
-            _ => return Err(Error::UnsupportedOS),
-        };
-
-        let program_path = which::which(program_name)?;
-        let mut cmd = Command::new(program_path);
-        cmd.args(args);
-
-        let output_lines = Self::run_cmd_and_return_deduped_lines(cmd)?;
-
-        Ok(output_lines)
-    }
     fn interactive_install(
         &self, packages: &[String], maybe_elevation_handler: Option<ElevationHandler>,
     ) -> Result<()> {
         let (program_name, mut args) = match self {
             Self::Arch => ("pacman", vec!["-S"]),
             Self::Debian => ("apt", vec!["install"]),
-            _ => return Err(Error::UnsupportedOS),
+            Self::Void => ("xbps-install", vec!["-S"]),
         };
 
         let program_path = which::which(program_name)?;
@@ -140,7 +169,7 @@ impl PackageManagerImpl for LinuxDistro {
         let (program_name, mut args) = match self {
             Self::Arch => ("pacman", vec!["-R", "-n", "-s"]),
             Self::Debian => ("apt", vec!["remove"]),
-            _ => return Err(Error::UnsupportedOS),
+            Self::Void => ("xbps-remove", vec!["-R"]),
         };
 
         let program_path = which::which(program_name)?;
@@ -160,7 +189,7 @@ impl PackageManagerImpl for LinuxDistro {
         let (program_name, args) = match self {
             Self::Arch => ("pacman", vec!["-S", "-i"]),
             Self::Debian => ("apt-cache", vec!["show"]),
-            _ => return Err(Error::UnsupportedOS),
+            Self::Void => ("xbps-query", vec!["-R", "-S"]),
         };
 
         let program_path = which::which(program_name)?;
