@@ -14,7 +14,7 @@ use std::{
 };
 
 /// Terminal user interface for Linux package managers
-#[derive(FromArgs)]
+#[derive(FromArgs, Debug)]
 #[argh(help_triggers("-h", "--help"))]
 struct Cli {
     /// select packages to install
@@ -23,17 +23,6 @@ struct Cli {
     /// select packages to remove
     #[argh(switch, short = 'r')]
     remove: bool,
-}
-
-impl Cli {
-    fn help(&self) {
-        let stdout = process::Command::new(env::current_exe().unwrap())
-            .arg("-h")
-            .output()
-            .unwrap()
-            .stdout;
-        println!("{}", String::from_utf8_lossy(&stdout));
-    }
 }
 
 fn main() {
@@ -56,7 +45,7 @@ fn main() {
 
     let Some(package_list) = maybe_package_list else {
         eprintln!("ERROR: No switch was passed!");
-        cli.help();
+        println!("{}", *HELP_TEXT);
         process::exit(1);
     };
 
@@ -99,11 +88,7 @@ fn main() {
                 manager.install(&selected_packages);
             } else if cli.remove {
                 manager.remove(&selected_packages);
-            } else {
-                eprintln!("ERROR: No switch passed!");
-                cli.help();
-                process::exit(1);
-            };
+            }
         }
         Err(e) => {
             eprintln!(

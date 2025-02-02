@@ -1,10 +1,18 @@
-use crate::Distro;
+use crate::{
+    Cli,
+    Distro,
+};
+use argh::FromArgs;
 use std::{
     fs,
     sync::LazyLock,
 };
 
-/// Compile-time constants
+pub static HELP_TEXT: LazyLock<String> = LazyLock::new(|| {
+    Cli::from_args(&["x-super"], &["--help"])
+        .unwrap_err()
+        .output
+});
 pub const SKIM_PREVIEW_WINDOW: &str = "right:66%:wrap";
 pub static DISTRO_BINARY_MAP: LazyLock<[(Distro, String); 4]> = LazyLock::new(|| {
     [
@@ -14,8 +22,6 @@ pub static DISTRO_BINARY_MAP: LazyLock<[(Distro, String); 4]> = LazyLock::new(||
         (Distro::OpenSuse, "/usr/bin/zypper".to_string()),
     ]
 });
-
-/// Run-time statics
 pub static IS_TERMUX: LazyLock<bool> =
     LazyLock::new(|| fs::exists("/data/data/com.termux/").unwrap_or(false));
 pub static FS_ROOT: LazyLock<&str> = LazyLock::new(|| {
