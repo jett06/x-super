@@ -32,7 +32,7 @@ impl PackageManager {
     }
     pub fn installed_packages(&self) -> Vec<String> {
         let mut cmd = match &self.distro {
-            Distro::Debian => Command::new("/usr/bin/dpkg"),
+            Distro::Debian => Command::new("dpkg"),
             _ => Command::new(self.binary.clone()),
         };
 
@@ -59,7 +59,7 @@ impl PackageManager {
     }
     pub fn available_packages(&self) -> Vec<String> {
         let mut cmd = match &self.distro {
-            Distro::Debian => Command::new("/usr/bin/apt-cache"),
+            Distro::Debian => Command::new("apt-cache"),
             _ => Command::new(self.binary.clone()),
         };
 
@@ -100,7 +100,7 @@ impl PackageManager {
     pub fn query_cmd(&self) -> String {
         match self.distro {
             Distro::Arch => format!("{} -Si", self.binary.clone()),
-            Distro::Debian => String::from("/usr/bin/apt-cache show"),
+            Distro::Debian => String::from("apt-cache show"),
             _ => todo!("PackageManager::info_cmd#[`match self.distro`]"),
         }
     }
