@@ -73,7 +73,7 @@ impl LinuxDistro {
     // `apt` emulates Debian's.
     #[cfg(target_os = "android")]
     pub fn try_from_env() -> Result<Self> {
-        Some(Self::Debian)
+        Ok(Self::Debian)
     }
 }
 

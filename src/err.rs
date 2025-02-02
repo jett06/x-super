@@ -18,6 +18,7 @@ pub enum Error {
     PackageManagerPathNotFound(#[from] WhichError),
     #[error("Your operating system is unsupported!")]
     UnsupportedOS,
+    #[cfg(target_os = "linux")]
     #[error("Couldn't load the given ini file! Error: {0:#?}")]
     IniLoadFailure(#[from] IniError),
 }
