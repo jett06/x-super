@@ -31,20 +31,41 @@ impl PackageManager {
         output_lines
     }
     pub fn installed_packages(&self) -> Vec<String> {
-        let mut cmd = Command::new(self.binary.clone());
+        let mut cmd = match &self.distro {
+            Distro::Debian => Command::new("/usr/bin/dpkg"),
+            _ => Command::new(self.binary.clone()),
+        };
 
         match &self.distro {
             Distro::Arch => cmd.arg("-Q").arg("-q"),
+            Distro::Debian => cmd.arg("--get-selections"),
             _ => todo!("PackageManager::installed_packages#[`match self.distro`]"),
         };
 
-        Self::output_adapter_with_dedup(&cmd.output().unwrap().stdout)
+        match &self.distro {
+            Distro::Debian => {
+                let mut package_list = Vec::new();
+                let cmd_output_str =
+                    String::from_utf8_lossy(&cmd.output().unwrap().stdout).to_string();
+                for line in cmd_output_str.lines() {
+                    if let Some(first_word) = line.split_whitespace().next() {
+                        package_list.push(first_word.to_string());
+                    }
+                }
+                package_list
+            }
+            _ => Self::output_adapter_with_dedup(&cmd.output().unwrap().stdout),
+        }
     }
     pub fn available_packages(&self) -> Vec<String> {
-        let mut cmd = Command::new(self.binary.clone());
+        let mut cmd = match &self.distro {
+            Distro::Debian => Command::new("/usr/bin/apt-cache"),
+            _ => Command::new(self.binary.clone()),
+        };
 
         match &self.distro {
             Distro::Arch => cmd.arg("-S").arg("-l").arg("-q"),
+            Distro::Debian => cmd.arg("pkgnames").arg("--generate"),
             _ => todo!("PackageManager::available_packages#[`match self.distro`]"),
         };
 
@@ -55,6 +76,7 @@ impl PackageManager {
 
         match &self.distro {
             Distro::Arch => cmd.arg("-S").arg(packages),
+            Distro::Debian => cmd.arg("install").arg(packages),
             _ => todo!("PackageManager::install#[`match self.distro`]"),
         };
 
@@ -67,6 +89,7 @@ impl PackageManager {
 
         match &self.distro {
             Distro::Arch => cmd.arg("-R").arg("-n").arg("-s").arg(packages),
+            Distro::Debian => cmd.arg("remove").arg(packages),
             _ => todo!("PackageManager::remove#[`match self.distro`]"),
         };
 
@@ -77,6 +100,7 @@ impl PackageManager {
     pub fn query_cmd(&self) -> String {
         match self.distro {
             Distro::Arch => format!("{} -Si", self.binary.clone()),
+            Distro::Debian => String::from("/usr/bin/apt-cache show"),
             _ => todo!("PackageManager::info_cmd#[`match self.distro`]"),
         }
     }
