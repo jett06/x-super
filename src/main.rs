@@ -4,11 +4,13 @@ mod os;
 mod pkg;
 mod sudo;
 
-use crate::consts::*;
-use crate::err::*;
-use crate::os::*;
-use crate::pkg::*;
-use crate::sudo::*;
+use crate::{
+    consts::*,
+    err::*,
+    os::*,
+    pkg::*,
+    sudo::*,
+};
 use argh::FromArgs;
 use skim::prelude::*;
 #[cfg(target_os = "android")]
