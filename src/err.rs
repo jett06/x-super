@@ -21,6 +21,8 @@ pub enum Error {
     #[cfg(target_os = "linux")]
     #[error("Couldn't load the given ini file! Error: {0:#?}")]
     IniLoadFailure(#[from] IniError),
+    #[error("Failed to elevate to superuser!")]
+    ElevationFailed,
 }
 
 pub type Result<T> = StdResult<T, Error>;

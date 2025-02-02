@@ -2,11 +2,13 @@ mod consts;
 mod err;
 mod os;
 mod pkg;
+mod sudo;
 
 use crate::consts::*;
 use crate::err::*;
 use crate::os::*;
 use crate::pkg::*;
+use crate::sudo::*;
 use argh::FromArgs;
 use skim::prelude::*;
 #[cfg(target_os = "android")]
@@ -33,6 +35,12 @@ fn main() -> Result<()> {
     // platforms.
     #[cfg(target_os = "android")]
     env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
+
+    #[cfg(target_os = "linux")]
+    let maybe_elevation_handler = ElevationHandler::try_from_env().ok();
+
+    #[cfg(target_os = "android")]
+    let maybe_elevation_handler = None;
 
     let cli: Cli = argh::from_env();
     let manager = new_package_manager()?;
@@ -79,9 +87,9 @@ fn main() -> Result<()> {
                 .collect();
 
             if cli.install {
-                manager.interactive_install(&selected_packages)?;
+                manager.interactive_install(&selected_packages, maybe_elevation_handler)?;
             } else if cli.remove {
-                manager.interactive_remove(&selected_packages)?;
+                manager.interactive_remove(&selected_packages, maybe_elevation_handler)?;
             }
         }
         Err(e) => {

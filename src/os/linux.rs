@@ -3,12 +3,10 @@ use crate::{
         Error,
         Result,
     },
-    PackageManagerImpl,
+    pkg::PackageManagerImpl,
+    sudo::ElevationHandler,
 };
-use std::{
-    path::PathBuf,
-    process::Command,
-};
+use std::process::Command;
 #[cfg(not(target_os = "android"))]
 use {
     crate::OS_RELEASE_PATH,
@@ -24,12 +22,8 @@ pub enum LinuxDistro {
 }
 
 impl LinuxDistro {
-    fn run_program_and_return_deduped_lines(
-        program_path: PathBuf, args: &[&str],
-    ) -> Result<Vec<String>> {
-        let mut cmd = Command::new(program_path);
-
-        let output_raw = cmd.args(args).output()?;
+    fn run_cmd_and_return_deduped_lines(mut cmd: Command) -> Result<Vec<String>> {
+        let output_raw = cmd.output()?;
         let output = String::from_utf8(output_raw.stdout)?;
 
         let mut output_lines: Vec<String> = output.lines().map(String::from).collect();
@@ -38,9 +32,8 @@ impl LinuxDistro {
 
         Ok(output_lines)
     }
-    fn run_program_interactive(program_path: PathBuf, args: &[&str]) -> Result<()> {
-        let mut cmd = Command::new(program_path);
-        let child = cmd.args(args).spawn()?;
+    fn run_cmd_interactive(mut cmd: Command) -> Result<()> {
+        let child = cmd.spawn()?;
         child.wait_with_output()?;
 
         Ok(())
@@ -86,7 +79,10 @@ impl PackageManagerImpl for LinuxDistro {
         };
 
         let program_path = which::which(program_name)?;
-        let output_lines = Self::run_program_and_return_deduped_lines(program_path, &args)?;
+        let mut cmd = Command::new(program_path);
+        cmd.args(args);
+
+        let output_lines = Self::run_cmd_and_return_deduped_lines(cmd)?;
         if let Self::Debian = self {
             let mut package_list = Vec::new();
 
@@ -109,11 +105,16 @@ impl PackageManagerImpl for LinuxDistro {
         };
 
         let program_path = which::which(program_name)?;
-        let output_lines = Self::run_program_and_return_deduped_lines(program_path, &args)?;
+        let mut cmd = Command::new(program_path);
+        cmd.args(args);
+
+        let output_lines = Self::run_cmd_and_return_deduped_lines(cmd)?;
 
         Ok(output_lines)
     }
-    fn interactive_install(&self, packages: &[String]) -> Result<()> {
+    fn interactive_install(
+        &self, packages: &[String], maybe_elevation_handler: Option<ElevationHandler>,
+    ) -> Result<()> {
         let (program_name, mut args) = match self {
             Self::Arch => ("pacman", vec!["-S"]),
             Self::Debian => ("apt", vec!["install"]),
@@ -122,10 +123,20 @@ impl PackageManagerImpl for LinuxDistro {
 
         let program_path = which::which(program_name)?;
         args.extend(packages.iter().map(String::as_str));
+        let mut cmd = Command::new(program_path);
+        cmd.args(args);
 
-        Self::run_program_interactive(program_path, &args)
+        if let Some(elevation) = maybe_elevation_handler {
+            if elevation.should_elevate() {
+                cmd = elevation.elevate_cmd(cmd)?;
+            }
+        }
+
+        Self::run_cmd_interactive(cmd)
     }
-    fn interactive_remove(&self, packages: &[String]) -> Result<()> {
+    fn interactive_remove(
+        &self, packages: &[String], maybe_elevation_handler: Option<ElevationHandler>,
+    ) -> Result<()> {
         let (program_name, mut args) = match self {
             Self::Arch => ("pacman", vec!["-R", "-n", "-s"]),
             Self::Debian => ("apt", vec!["remove"]),
@@ -134,8 +145,16 @@ impl PackageManagerImpl for LinuxDistro {
 
         let program_path = which::which(program_name)?;
         args.extend(packages.iter().map(String::as_str));
+        let mut cmd = Command::new(program_path);
+        cmd.args(args);
 
-        Self::run_program_interactive(program_path, &args)
+        if let Some(elevation) = maybe_elevation_handler {
+            if elevation.should_elevate() {
+                cmd = elevation.elevate_cmd(cmd)?;
+            }
+        }
+
+        Self::run_cmd_interactive(cmd)
     }
     fn package_query_cmd(&self) -> Result<String> {
         let (program_name, args) = match self {
