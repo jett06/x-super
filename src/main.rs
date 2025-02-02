@@ -1,8 +1,10 @@
 mod consts;
+mod err;
 mod os;
 mod pkg;
 
 use crate::consts::*;
+use crate::err::*;
 use crate::os::*;
 use crate::pkg::*;
 use argh::FromArgs;
@@ -26,22 +28,19 @@ struct Cli {
     remove: bool,
 }
 
-fn main() {
+fn main() -> Result<()> {
     // Fix an environmental variable for `skim`, otherwise the TUI is scrambled on Termux
     // platforms.
     #[cfg(target_os = "android")]
     env::set_var("TERMINFO", "/data/data/com.termux/files/usr/share/terminfo");
 
     let cli: Cli = argh::from_env();
-    let Some(manager) = new_package_manager() else {
-        eprintln!("ERROR: Couldn't detect your package manager! Is this a supported OS?");
-        process::exit(1)
-    };
+    let manager = new_package_manager()?;
 
     let maybe_package_list = if cli.install {
-        manager.available_package_list().ok()
+        Some(manager.available_package_list()?)
     } else if cli.remove {
-        manager.installed_package_list().ok()
+        Some(manager.installed_package_list()?)
     } else {
         None
     };
@@ -52,7 +51,7 @@ fn main() {
         process::exit(1);
     };
 
-    let query_cmd = format!("{} {{}}", manager.package_query_cmd());
+    let query_cmd = format!("{} {{}}", manager.package_query_cmd()?);
 
     match SkimOptionsBuilder::default()
         .multi(true)
@@ -80,9 +79,9 @@ fn main() {
                 .collect();
 
             if cli.install {
-                manager.interactive_install(&selected_packages);
+                manager.interactive_install(&selected_packages)?;
             } else if cli.remove {
-                manager.interactive_remove(&selected_packages);
+                manager.interactive_remove(&selected_packages)?;
             }
         }
         Err(e) => {
@@ -93,4 +92,6 @@ fn main() {
             process::exit(1);
         }
     };
+
+    Ok(())
 }
