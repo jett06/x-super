@@ -16,10 +16,8 @@ use {
 
 #[derive(Clone)]
 pub enum LinuxDistro {
-    #[cfg(not(target_os = "android"))]
     Arch,
     Debian,
-    #[cfg(not(target_os = "android"))]
     Void,
 }
 
