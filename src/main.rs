@@ -1,9 +1,9 @@
 mod consts;
-mod distro;
+mod os;
 mod pkg;
 
 use crate::consts::*;
-use crate::distro::*;
+use crate::os::*;
 use crate::pkg::*;
 use argh::FromArgs;
 use skim::prelude::*;
@@ -26,6 +26,7 @@ struct Cli {
 }
 
 fn main() {
+    #[cfg(target_os = "linux")]
     // Fix an environmental variable for `skim`, otherwise the TUI is scrambled on Termux
     // platforms.
     if *IS_TERMUX {
@@ -33,15 +34,15 @@ fn main() {
     }
 
     let cli: Cli = argh::from_env();
-    let Some(manager) = PackageManager::try_from_env() else {
+    let Some(manager) = new_package_manager() else {
         eprintln!("ERROR: Couldn't detect your package manager! Is this a supported OS?");
         process::exit(1)
     };
 
     let maybe_package_list = if cli.install {
-        manager.available_packages().ok()
+        manager.available_package_list().ok()
     } else if cli.remove {
-        manager.installed_packages().ok()
+        manager.installed_package_list().ok()
     } else {
         None
     };
@@ -52,15 +53,7 @@ fn main() {
         process::exit(1);
     };
 
-    let maybe_query_cmd = manager.query_cmd();
-    let query_cmd = if let Some(cmd) = maybe_query_cmd {
-        format!("{} {{}}", cmd)
-    } else {
-        eprintln!(
-            "Conversion of your package manager from an `OsStr` to a `String` object failed!"
-        );
-        process::exit(1);
-    };
+    let query_cmd = format!("{} {{}}", manager.package_query_cmd());
 
     match SkimOptionsBuilder::default()
         .multi(true)
@@ -88,9 +81,9 @@ fn main() {
                 .collect();
 
             if cli.install {
-                manager.install(&selected_packages);
+                manager.interactive_install(&selected_packages);
             } else if cli.remove {
-                manager.remove(&selected_packages);
+                manager.interactive_remove(&selected_packages);
             }
         }
         Err(e) => {
