@@ -1,9 +1,5 @@
 use crate::PackageManagerImpl;
-#[cfg(not(target_os = "android"))]
-use crate::OS_RELEASE_PATH;
-use ini::Ini;
 use std::{
-    fs,
     io::Result as IOResult,
     path::PathBuf,
     process::{
@@ -11,11 +7,19 @@ use std::{
         Command,
     },
 };
+#[cfg(not(target_os = "android"))]
+use {
+    crate::OS_RELEASE_PATH,
+    ini::Ini,
+    std::fs,
+};
 
 #[derive(Clone)]
 pub enum LinuxDistro {
+    #[cfg(not(target_os = "android"))]
     Arch,
     Debian,
+    #[cfg(not(target_os = "android"))]
     Void,
 }
 
@@ -41,6 +45,7 @@ impl LinuxDistro {
 
         Ok(())
     }
+    #[cfg(not(target_os = "android"))]
     fn from_os_release(os_release: &Ini) -> Option<Self> {
         let section = os_release.general_section();
         let id = section.get("ID");

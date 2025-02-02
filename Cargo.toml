@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 argh = { version = "0.1.13" }
-rust-ini = "0.21.1"
 two_percent = { version = "0.12.3", default-features = false }
 which = "7.0.1"
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+rust-ini = "0.21.1"
