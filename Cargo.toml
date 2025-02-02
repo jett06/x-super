@@ -1,0 +1,8 @@
+[package]
+name = "x-super"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argh = { version = "0.1.13" }
+two_percent = { version = "0.12.3", default-features = false }
