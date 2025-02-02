@@ -56,15 +56,25 @@ impl PackageManager {
     pub fn install(&self, packages: &[String]) -> ! {
         let (mut cmd, args) = self.distro.install_cmd();
 
-        let child: Child = cmd.args(args).args(packages).spawn().unwrap();
-        child.wait_with_output().unwrap();
+        let maybe_child = cmd.args(args).args(packages).spawn();
+        if let Ok(child) = maybe_child {
+            child
+                .wait_with_output()
+                .expect("Failed to wait on the child process!");
+        }
+
         process::exit(0);
     }
     pub fn remove(&self, packages: &[String]) -> ! {
         let (mut cmd, args) = self.distro.remove_cmd();
 
-        let child: Child = cmd.args(args).args(packages).spawn().unwrap();
-        child.wait_with_output().unwrap();
+        let maybe_child = cmd.args(args).args(packages).spawn();
+        if let Ok(child) = maybe_child {
+            child
+                .wait_with_output()
+                .expect("Failed to wait on the child process!");
+        }
+
         process::exit(0);
     }
     pub fn query_cmd(&self) -> Option<String> {

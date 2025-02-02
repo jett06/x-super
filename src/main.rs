@@ -33,7 +33,10 @@ fn main() {
     }
 
     let cli: Cli = argh::from_env();
-    let manager = PackageManager::try_from_env().unwrap();
+    let Some(manager) = PackageManager::try_from_env() else {
+        eprintln!("ERROR: Couldn't detect your package manager! Is this a supported OS?");
+        process::exit(1)
+    };
 
     let maybe_package_list = if cli.install {
         manager.available_packages().ok()
